@@ -1,8 +1,6 @@
 name: Surf
 description: Stateful programmatic web browsing in Go.
-#url: http://headzoo.io/surf
-url: http://headzoo.io
-baseurl: /surf
+baseurl: http://headzoo.io/surf
 paginate: 10
 permalink: pretty
 destination: _site
