@@ -1,5 +1,4 @@
 ---
-layout: page
 ---
 
 Surf is a Go (golang) library that implements a virtual browser that you control pragmatically. Just like a real
