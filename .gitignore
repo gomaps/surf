@@ -1,2 +1,4 @@
 .idea/
-_*/
+_cache/
+_plugins/
+_site/
