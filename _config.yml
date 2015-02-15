@@ -1,0 +1,13 @@
+name: Surf
+description: Stateful programmatic web browsing in Go.
+#url: http://headzoo.io/surf
+url: http://headzoo.io
+baseurl: /surf
+paginate: 10
+permalink: pretty
+destination: _site
+safe: false
+lsi: false
+timezone: America/New_York
+encoding: utf-8
+highlighter: pygments
