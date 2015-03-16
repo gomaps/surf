@@ -2,11 +2,12 @@ package browser
 
 import (
 	"fmt"
-	"github.com/headzoo/surf/jar"
-	"github.com/headzoo/ut"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gomaps/surf/jar"
+	"github.com/headzoo/ut"
 )
 
 func TestBrowserForm(t *testing.T) {

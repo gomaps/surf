@@ -3,11 +3,12 @@ package surf
 import (
 	"bytes"
 	"fmt"
-	"github.com/headzoo/surf/jar"
-	"github.com/headzoo/ut"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/gomaps/surf/jar"
+	"github.com/headzoo/ut"
 )
 
 func TestGet(t *testing.T) {
@@ -53,7 +54,7 @@ func TestPost(t *testing.T) {
 		}
 	}))
 	defer ts.Close()
-	
+
 	bow := NewBrowser()
 	bow.Post(ts.URL, "application/x-www-form-urlencoded", nil)
 	ut.AssertEquals(200, bow.StatusCode())
