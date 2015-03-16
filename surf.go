@@ -2,6 +2,8 @@
 package surf
 
 import (
+	"net/http"
+
 	"github.com/headzoo/surf/agent"
 	"github.com/headzoo/surf/browser"
 	"github.com/headzoo/surf/jar"
@@ -35,6 +37,7 @@ func NewBrowser() *browser.Browser {
 		browser.MetaRefreshHandling: DefaultMetaRefreshHandling,
 		browser.FollowRedirects:     DefaultFollowRedirects,
 	})
+	bow.SetTransport(&http.Transport{})
 
 	return bow
 }

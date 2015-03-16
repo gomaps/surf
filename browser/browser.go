@@ -2,16 +2,17 @@ package browser
 
 import (
 	"bytes"
-	"github.com/PuerkitoBio/goquery"
-	"github.com/headzoo/surf/errors"
-	"github.com/headzoo/surf/jar"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
-	"io/ioutil"
+
+	"github.com/PuerkitoBio/goquery"
+	"github.com/headzoo/surf/errors"
+	"github.com/headzoo/surf/jar"
 )
 
 // Attribute represents a Browser capability.
@@ -46,7 +47,7 @@ type Browsable interface {
 
 	// SetAttributes is used to set all the browser attributes.
 	SetAttributes(a AttributeMap)
-	
+
 	// SetState sets the init browser state.
 	SetState(sj *jar.State)
 
@@ -172,7 +173,11 @@ type Browser struct {
 
 	// refresh is a timer used to meta refresh pages.
 	refresh *time.Timer
-	
+
+	// transport specifies the mechanism by which individual HTTP
+	// requests are made.
+	transport *http.Transport
+
 	// body of the current page.
 	body []byte
 }
@@ -435,6 +440,10 @@ func (bow *Browser) SetHeadersJar(h http.Header) {
 	bow.headers = h
 }
 
+func (bow *Browser) SetTransport(t *http.Transport) {
+	bow.transport = t
+}
+
 // AddRequestHeader sets a header the browser sends with each request.
 func (bow *Browser) AddRequestHeader(name, value string) {
 	bow.headers.Add(name, value)
@@ -509,7 +518,7 @@ func (bow *Browser) Find(expr string) *goquery.Selection {
 
 // buildClient creates, configures, and returns a *http.Client type.
 func (bow *Browser) buildClient() *http.Client {
-	client := &http.Client{}
+	client := &http.Client{Transport: bow.transport}
 	client.Jar = bow.cookies
 	client.CheckRedirect = bow.shouldRedirect
 	return client
@@ -562,18 +571,18 @@ func (bow *Browser) httpRequest(req *http.Request) error {
 	if err != nil {
 		return err
 	}
-	
+
 	bow.body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}
-	
+
 	buff := bytes.NewBuffer(bow.body)
 	dom, err := goquery.NewDocumentFromReader(buff)
 	if err != nil {
 		return err
 	}
-	
+
 	bow.history.Push(bow.state)
 	bow.state = jar.NewHistoryState(req, resp, dom)
 	bow.postSend()
