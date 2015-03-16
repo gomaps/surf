@@ -4,9 +4,9 @@ package surf
 import (
 	"net/http"
 
-	"github.com/headzoo/surf/agent"
-	"github.com/headzoo/surf/browser"
-	"github.com/headzoo/surf/jar"
+	"github.com/gomaps/surf/agent"
+	"github.com/gomaps/surf/browser"
+	"github.com/gomaps/surf/jar"
 )
 
 var (
