@@ -123,8 +123,6 @@ func (f *Form) send(buttonName, buttonValue string) error {
 		}
 		return f.bow.PostForm(aurl.String(), values)
 	}
-
-	return nil
 }
 
 // Serialize converts the form fields into a url.Values type.

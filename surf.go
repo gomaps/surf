@@ -38,6 +38,7 @@ func NewBrowser() *browser.Browser {
 		browser.FollowRedirects:     DefaultFollowRedirects,
 	})
 	bow.SetTransport(&http.Transport{})
+	bow.SetEnumCallback(nil)
 
 	return bow
 }
