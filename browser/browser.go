@@ -2,6 +2,7 @@ package browser
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -148,6 +149,10 @@ type Browsable interface {
 	Find(expr string) *goquery.Selection
 }
 
+// EnumPrintCallback defines a function pointer that is passed each printed line
+// of text during browser request enumeration
+type EnumPrintCallback func(string)
+
 // Default is the default Browser implementation.
 type Browser struct {
 	// state is the current browser state.
@@ -180,6 +185,9 @@ type Browser struct {
 
 	// body of the current page.
 	body []byte
+
+	// enumRequest specifies whether to dump the contents of a request before sending
+	enumCB EnumPrintCallback
 }
 
 // Open requests the given URL using the GET method.
@@ -444,6 +452,10 @@ func (bow *Browser) SetTransport(t *http.Transport) {
 	bow.transport = t
 }
 
+func (bow *Browser) SetEnumCallback(cb EnumPrintCallback) {
+	bow.enumCB = cb
+}
+
 // AddRequestHeader sets a header the browser sends with each request.
 func (bow *Browser) AddRequestHeader(name, value string) {
 	bow.headers.Add(name, value)
@@ -452,6 +464,11 @@ func (bow *Browser) AddRequestHeader(name, value string) {
 // DelRequestHeader deletes a header so the browser will not send it with future requests.
 func (bow *Browser) DelRequestHeader(name string) {
 	bow.headers.Del(name)
+}
+
+// GetRequestHeader returns the current value of the named request header
+func (bow *Browser) GetRequestHeader(name string) string {
+	return bow.headers.Get(name)
 }
 
 // ResolveUrl returns an absolute URL for a possibly relative URL.
@@ -516,6 +533,41 @@ func (bow *Browser) Find(expr string) *goquery.Selection {
 
 // -- Unexported methods --
 
+// enumerateRequest dumps the contents of an http request, to better understand
+// what the surf module is doing under the hood
+func (bow *Browser) enumerateRequest(req *http.Request) {
+	bow.enumCB("== HTTP request =========================================\n")
+	bow.enumCB(fmt.Sprintf("%s | %s | %s\n", req.Proto, req.Method, req.URL.String()))
+	for name, values := range req.Header {
+		header := fmt.Sprintf("%s: {", name)
+		for idx, value := range values {
+			if idx != 0 {
+				header += ", "
+			}
+			header += fmt.Sprintf("\"%s\"", value)
+		}
+		header += "}\n"
+		bow.enumCB(header)
+	}
+	//bow.enumCB("---------------------------------------------------------\n")
+	//bow.enumCB(fmt.Sprintf("%s\n", req.Body))
+	//bow.enumCB("---------------------------------------------------------\n")
+	bow.enumCB(fmt.Sprintf("Content length = %d\n", req.ContentLength))
+	encStr := "Transfer encoding = "
+	for idx, enc := range req.TransferEncoding {
+		if idx != 0 {
+			encStr += ", "
+		}
+		encStr += fmt.Sprintf("\"%s\"", enc)
+	}
+	encStr += "\n"
+	bow.enumCB(encStr)
+	bow.enumCB(fmt.Sprintf("Host = \"%s\"\n", req.Host))
+	bow.enumCB(fmt.Sprintf("Remote Address = %s\n", req.RemoteAddr))
+	bow.enumCB(fmt.Sprintf("Request URI = %s\n", req.RequestURI))
+	bow.enumCB("=========================================================\n")
+}
+
 // buildClient creates, configures, and returns a *http.Client type.
 func (bow *Browser) buildClient() *http.Client {
 	client := &http.Client{Transport: bow.transport}
@@ -567,6 +619,9 @@ func (bow *Browser) httpPOST(u *url.URL, ref *url.URL, contentType string, body 
 // send uses the given *http.Request to make an HTTP request.
 func (bow *Browser) httpRequest(req *http.Request) error {
 	bow.preSend()
+	if bow.enumCB != nil {
+		bow.enumerateRequest(req)
+	}
 	resp, err := bow.buildClient().Do(req)
 	if err != nil {
 		return err
