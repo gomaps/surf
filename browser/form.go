@@ -33,6 +33,8 @@ func NewForm(bow Browsable, s *goquery.Selection) *Form {
 	fields, buttons := serializeForm(s)
 	method, action := formAttributes(bow, s)
 
+	//fmt.Println(fields)
+
 	return &Form{
 		bow:       bow,
 		selection: s,
@@ -114,6 +116,7 @@ func (f *Form) send(buttonName, buttonValue string) error {
 		values.Set(buttonName, buttonValue)
 	}
 
+	//fmt.Println(values)
 	if strings.ToUpper(method) == "GET" {
 		return f.bow.OpenForm(aurl.String(), values)
 	} else {
@@ -131,7 +134,7 @@ func (f *Form) send(buttonName, buttonValue string) error {
 // Returns two url.Value types. The first is the form field values, and the
 // second is the form button values.
 func serializeForm(sel *goquery.Selection) (url.Values, url.Values) {
-	input := sel.Find("input,button")
+	input := sel.Find("input,button,select")
 	if input.Length() == 0 {
 		return url.Values{}, url.Values{}
 	}
@@ -157,6 +160,21 @@ func serializeForm(sel *goquery.Selection) (url.Values, url.Values) {
 					}
 					fields.Add(name, val)
 				}
+			} else {
+				//fmt.Println(name)
+				// Handle select (dropdown) inputs
+				s.Find("option").Each(func(i int, s *goquery.Selection) {
+					val, ok := s.Attr("selected")
+					if ok {
+						if val == "selected" {
+							val, ok := s.Attr("value")
+							if ok {
+								//fmt.Println(val)
+								fields.Add(name, val)
+							}
+						}
+					}
+				})
 			}
 		}
 	})
