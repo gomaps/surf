@@ -162,16 +162,7 @@ func serializeForm(sel *goquery.Selection) (url.Values, url.Values) {
 				//fmt.Println(name)
 				// Handle select (dropdown) inputs
 				s.Find("option").Each(func(i int, s *goquery.Selection) {
-					val, ok := s.Attr("selected")
-					if ok {
-						if val == "selected" {
-							val, ok := s.Attr("value")
-							if ok {
-								//fmt.Println(val)
-								fields.Add(name, val)
-							}
-						}
-					}
+					fields.Add(name, "")
 				})
 			}
 		}
