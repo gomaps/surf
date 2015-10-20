@@ -1,6 +1,7 @@
 package browser
 
 import (
+	"fmt"
 	"net/url"
 	"strings"
 
@@ -10,9 +11,11 @@ import (
 
 // Submittable represents an element that may be submitted, such as a form.
 type Submittable interface {
+	PrintFields()
 	Method() string
 	Action() string
 	Input(name, value string) error
+	AddField(name, value string) error
 	Click(button string) error
 	Submit() error
 	Dom() *goquery.Selection
@@ -45,6 +48,12 @@ func NewForm(bow Browsable, s *goquery.Selection) *Form {
 	}
 }
 
+func (f *Form) PrintFields() {
+	for name, val := range f.fields {
+		fmt.Println("%s - %s", name, val)
+	}
+}
+
 // Method returns the form method, eg "GET" or "POST".
 func (f *Form) Method() string {
 	return f.method
@@ -64,6 +73,16 @@ func (f *Form) Input(name, value string) error {
 	}
 	return errors.NewElementNotFound(
 		"No input found with name '%s'.", name)
+}
+
+// Add a new field to the form
+func (f *Form) AddField(name, value string) error {
+	if _, ok := f.fields[name]; ok {
+		return errors.New("Form already contains a field with the name '%s'.", name)
+	}
+
+	f.fields.Add(name, value)
+	return nil
 }
 
 // Submit submits the form.
@@ -161,6 +180,7 @@ func serializeForm(sel *goquery.Selection) (url.Values, url.Values) {
 			} else {
 				//fmt.Println(name)
 				// Handle select (dropdown) inputs
+				var selectVal = ""
 				s.Find("option").Each(func(i int, s *goquery.Selection) {
 					val, ok := s.Attr("selected")
 					if ok {
@@ -168,11 +188,12 @@ func serializeForm(sel *goquery.Selection) (url.Values, url.Values) {
 							val, ok := s.Attr("value")
 							if ok {
 								//fmt.Println(val)
-								fields.Add(name, val)
+								selectVal = val
 							}
 						}
 					}
 				})
+				fields.Add(name, selectVal)
 			}
 		}
 	})

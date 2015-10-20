@@ -147,6 +147,8 @@ type Browsable interface {
 
 	// Find returns the dom selections matching the given expression.
 	Find(expr string) *goquery.Selection
+
+	SetEnumCallback(cb EnumPrintCallback)
 }
 
 // EnumPrintCallback defines a function pointer that is passed each printed line
