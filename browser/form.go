@@ -50,7 +50,7 @@ func NewForm(bow Browsable, s *goquery.Selection) *Form {
 
 func (f *Form) PrintFields() {
 	for name, val := range f.fields {
-		fmt.Println("%s - %s", name, val)
+		fmt.Printf("%s - %s", name, val)
 	}
 }
 
