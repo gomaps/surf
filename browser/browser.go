@@ -7,7 +7,9 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -64,11 +66,17 @@ type Browsable interface {
 	// SetHeadersJar sets the headers the browser sends with each request.
 	SetHeadersJar(h http.Header)
 
+	// SetTransport sets the http library transport mechanism for each request.
+	SetTransport(t *http.Transport)
+
 	// AddRequestHeader adds a header the browser sends with each request.
 	AddRequestHeader(name, value string)
 
 	// Open requests the given URL using the GET method.
 	Open(url string) error
+
+	// Open requests the given URL using the HEAD method.
+	Head(url string) error
 
 	// OpenForm appends the data values to the given URL and sends a GET request.
 	OpenForm(url string, data url.Values) error
@@ -172,6 +180,10 @@ type Browser struct {
 	// history stores the visited pages.
 	history jar.History
 
+	// transport specifies the mechanism by which individual HTTP
+	// requests are made.
+	transport *http.Transport
+
 	// headers are additional headers to send with each request.
 	headers http.Header
 
@@ -180,10 +192,6 @@ type Browser struct {
 
 	// refresh is a timer used to meta refresh pages.
 	refresh *time.Timer
-
-	// transport specifies the mechanism by which individual HTTP
-	// requests are made.
-	transport *http.Transport
 
 	// body of the current page.
 	body []byte
@@ -199,6 +207,15 @@ func (bow *Browser) Open(u string) error {
 		return err
 	}
 	return bow.httpGET(ur, nil)
+}
+
+// Open requests the given URL using the HEAD method.
+func (bow *Browser) Head(u string) error {
+	ur, err := url.Parse(u)
+	if err != nil {
+		return err
+	}
+	return bow.httpHEAD(ur, nil)
 }
 
 // OpenForm appends the data values to the given URL and sends a GET request.
@@ -450,6 +467,7 @@ func (bow *Browser) SetHeadersJar(h http.Header) {
 	bow.headers = h
 }
 
+// SetTransport sets the http library transport mechanism for each request.
 func (bow *Browser) SetTransport(t *http.Transport) {
 	bow.transport = t
 }
@@ -460,7 +478,7 @@ func (bow *Browser) SetEnumCallback(cb EnumPrintCallback) {
 
 // AddRequestHeader sets a header the browser sends with each request.
 func (bow *Browser) AddRequestHeader(name, value string) {
-	bow.headers.Add(name, value)
+	bow.headers.Set(name, value)
 }
 
 // DelRequestHeader deletes a header so the browser will not send it with future requests.
@@ -496,10 +514,16 @@ func (bow *Browser) Download(o io.Writer) (int64, error) {
 
 // Url returns the page URL as a string.
 func (bow *Browser) Url() *url.URL {
-	if bow.state.Request == nil {
+	if bow.state.Response == nil {
+		// there is a possibility that we issued a request, but for
+		// whatever reason the request failed.
+		if bow.state.Request != nil {
+			return bow.state.Request.URL
+		}
 		return nil
 	}
-	return bow.state.Request.URL
+
+	return bow.state.Response.Request.URL
 }
 
 // StatusCode returns the response status code.
@@ -575,6 +599,10 @@ func (bow *Browser) buildClient() *http.Client {
 	client := &http.Client{Transport: bow.transport}
 	client.Jar = bow.cookies
 	client.CheckRedirect = bow.shouldRedirect
+	if bow.transport != nil {
+		client.Transport = bow.transport
+	}
+
 	return client
 }
 
@@ -585,13 +613,32 @@ func (bow *Browser) buildRequest(method, url string, ref *url.URL, body io.Reade
 	if err != nil {
 		return nil, err
 	}
-	req.Header = bow.headers
-	req.Header.Add("User-Agent", bow.userAgent)
+	req.Header = copyHeaders(bow.headers)
+
+	if host := req.Header.Get("Host"); host != "" {
+		req.Host = host
+	}
+	req.Header.Set("User-Agent", bow.userAgent)
 	if bow.attributes[SendReferer] && ref != nil {
-		req.Header.Add("Referer", ref.String())
+		req.Header.Set("Referer", ref.String())
+	}
+	if os.Getenv("SURF_DEBUG_HEADERS") != "" {
+		d, _ := httputil.DumpRequest(req, false)
+		fmt.Fprintln(os.Stderr, "===== [DUMP] =====\n", string(d))
 	}
 
 	return req, nil
+}
+
+func copyHeaders(h http.Header) http.Header {
+	if h == nil {
+		return nil
+	}
+	h2 := make(http.Header, len(h))
+	for k, v := range h {
+		h2[k] = v
+	}
+	return h2
 }
 
 // httpGET makes an HTTP GET request for the given URL.
@@ -599,6 +646,17 @@ func (bow *Browser) buildRequest(method, url string, ref *url.URL, body io.Reade
 // be set to ref.
 func (bow *Browser) httpGET(u *url.URL, ref *url.URL) error {
 	req, err := bow.buildRequest("GET", u.String(), ref, nil)
+	if err != nil {
+		return err
+	}
+	return bow.httpRequest(req)
+}
+
+// httpHEAD makes an HTTP HEAD request for the given URL.
+// When via is not nil, and AttributeSendReferer is true, the Referer header will
+// be set to ref.
+func (bow *Browser) httpHEAD(u *url.URL, ref *url.URL) error {
+	req, err := bow.buildRequest("HEAD", u.String(), ref, nil)
 	if err != nil {
 		return err
 	}

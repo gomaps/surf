@@ -16,7 +16,9 @@ type Submittable interface {
 	Action() string
 	Input(name, value string) error
 	AddField(name, value string) error
+	Set(name, value string) error
 	Click(button string) error
+	ClickByValue(name, value string) error
 	Submit() error
 	Dom() *goquery.Selection
 }
@@ -76,6 +78,7 @@ func (f *Form) Input(name, value string) error {
 }
 
 // Add a new field to the form
+// Duplicate of form.Set added by upstream repo
 func (f *Form) AddField(name, value string) error {
 	if _, ok := f.fields[name]; ok {
 		return errors.New("Form already contains a field with the name '%s'.", name)
@@ -83,6 +86,16 @@ func (f *Form) AddField(name, value string) error {
 
 	f.fields.Add(name, value)
 	return nil
+}
+
+// Set will set the value of a form field if it exists,
+// or create and set it if it does not.
+func (f *Form) Set(name, value string) error {
+	if _, ok := f.fields[name]; !ok {
+		f.fields.Add(name, value)
+		return nil
+	}
+	return f.Input(name, value)
 }
 
 // Submit submits the form.
@@ -104,6 +117,26 @@ func (f *Form) Click(button string) error {
 			"Form does not contain a button with the name '%s'.", button)
 	}
 	return f.send(button, f.buttons[button][0])
+}
+
+// Click submits the form by clicking the button with the given name and value.
+func (f *Form) ClickByValue(name, value string) error {
+	if _, ok := f.buttons[name]; !ok {
+		return errors.NewInvalidFormValue(
+			"Form does not contain a button with the name '%s'.", name)
+	}
+	valueNotFound := true
+	for _, val := range f.buttons[name] {
+		if val == value {
+			valueNotFound = false
+			break
+		}
+	}
+	if valueNotFound {
+		return errors.NewInvalidFormValue(
+			"Form does not contain a button with the name '%s' and value '%s'.", name, value)
+	}
+	return f.send(name, value)
 }
 
 // Dom returns the inner *goquery.Selection.
@@ -151,7 +184,7 @@ func (f *Form) send(buttonName, buttonValue string) error {
 // Returns two url.Value types. The first is the form field values, and the
 // second is the form button values.
 func serializeForm(sel *goquery.Selection) (url.Values, url.Values) {
-	input := sel.Find("input,button,select")
+	input := sel.Find("input,button,textarea")
 	if input.Length() == 0 {
 		return url.Values{}, url.Values{}
 	}
@@ -161,39 +194,11 @@ func serializeForm(sel *goquery.Selection) (url.Values, url.Values) {
 	input.Each(func(_ int, s *goquery.Selection) {
 		name, ok := s.Attr("name")
 		if ok {
-			typ, ok := s.Attr("type")
-			if ok {
-				if typ == "submit" {
-					val, ok := s.Attr("value")
-					if ok {
-						buttons.Add(name, val)
-					} else {
-						buttons.Add(name, "")
-					}
-				} else {
-					val, ok := s.Attr("value")
-					if !ok {
-						val = ""
-					}
-					fields.Add(name, val)
-				}
+			val, _ := s.Attr("value")
+			if t, _ := s.Attr("type"); t == "submit" {
+				buttons.Add(name, val)
 			} else {
-				//fmt.Println(name)
-				// Handle select (dropdown) inputs
-				var selectVal = ""
-				s.Find("option").Each(func(i int, s *goquery.Selection) {
-					val, ok := s.Attr("selected")
-					if ok {
-						if val == "selected" {
-							val, ok := s.Attr("value")
-							if ok {
-								//fmt.Println(val)
-								selectVal = val
-							}
-						}
-					}
-				})
-				fields.Add(name, selectVal)
+				fields.Add(name, val)
 			}
 		}
 	})

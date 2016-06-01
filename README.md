@@ -5,8 +5,11 @@ Surf
 [![Documentation](https://img.shields.io/badge/documentation-readthedocs-blue.svg?style=flat-square)](http://www.gosurf.io)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://raw.githubusercontent.com/headzoo/surf/master/LICENSE.md)
 
-Surf is a Go (golang) library that implements a virtual browser that you can control pragmatically. Just like a
-real browser you can open pages, follow links, bookmark pages, submit forms, and many other things.
+Surf is a Go (golang) library that implements a virtual web browser that you control pragmatically.
+Surf isn't just another Go solution for downloading content from the web. Surf is designed to behave
+like web browser, and includes: cookie management, history, bookmarking, user agent spoofing
+(with a nifty user agent builder), submitting forms, DOM selection and traversal via jQuery style
+CSS selectors, scraping assets like images, stylesheets, and other features.
 
 * [Installation](#installation)
 * [General Usage](#quick-start)
@@ -47,25 +50,34 @@ func main() {
 
 ### Documentation
 
-Complete documentation is available on [Read the Docs](http://www.gosurf.io).
+Complete documentation is available on [Read the Docs](http://surf.readthedocs.org/).
 
 
 ### Credits
-Go was started by [Sean Hickey](https://github.com/headzoo) (headzoo) to learn more about the Go programming language.
+Surf was started by [Sean Hickey](https://github.com/headzoo) (headzoo) to learn more about the Go programming language.
 The idea to create Surf was born in [this Reddit thread](http://www.reddit.com/r/golang/comments/2efw1q/mechanize_in_go/cjz4lze).
+
+[![Twitter](https://img.shields.io/badge/follow-%40WebSeanHickey-orange.svg?style=flat-square)](https://twitter.com/WebSeanHickey)
 
 Surf uses the awesome [goquery](https://github.com/PuerkitoBio/goquery) by Martin Angers, and
 was written using [Intellij](http://www.jetbrains.com/idea/) and
 the [golang plugin](http://plugins.jetbrains.com/plugin/5047).
 
-Contributing authors:
+Contributions have been made to Surf by the following awesome developers:
 
 * [Haruyama Seigo](https://github.com/haruyama)
 * [Tatsushi Demachi](https://github.com/tatsushid)
 * [Charl Matthee](https://github.com/charl)
 * [Matt Holt](https://github.com/mholt)
-
-[![Twitter](https://img.shields.io/badge/follow-%40WebSeanHickey-orange.svg?style=flat-square)](https://twitter.com/WebSeanHickey)
+* [lalyos](https://github.com/lalyos)
+* [lestrrat](https://github.com/lestrrat)
+* [Carl Henrik Lunde](https://github.com/chlunde)
+* [cornerot](https://github.com/cornerot)
+* [lennyxc](https://github.com/lennyxc)
+* [tlianza](https://github.com/tlianza)
+* [joshuamorris3](https://github.com/joshuamorris3)
+* [sqs](https://github.com/sqs)
+* [nicot](https://github.com/nicot)
 
 
 ### Contributing

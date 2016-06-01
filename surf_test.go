@@ -60,6 +60,22 @@ func TestPost(t *testing.T) {
 	ut.AssertEquals(200, bow.StatusCode())
 }
 
+func TestHead(t *testing.T) {
+	ut.Run(t)
+	var r *http.Request;
+	
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		r = req
+	}))
+	defer ts.Close()
+
+	bow := NewBrowser()
+
+	err := bow.Head(ts.URL + "/page1")
+	ut.AssertNil(err)
+	ut.AssertNotNil(r)
+}
+
 func TestDownload(t *testing.T) {
 	ut.Run(t)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -121,6 +137,23 @@ func TestHeaders(t *testing.T) {
 	err := bow.Open(ts.URL)
 	ut.AssertNil(err)
 	ut.AssertContains("Testing-1", bow.Body())
+	ut.AssertContains("Testing-2", bow.Body())
+}
+
+// TestHeadersSet
+// See: https://github.com/headzoo/surf/pull/19
+func TestHeadersBug19(t *testing.T) {
+	ut.Run(t)
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		fmt.Fprint(w, req.Header.Get("X-Testing"))
+	}))
+	defer ts.Close()
+
+	bow := NewBrowser()
+	bow.AddRequestHeader("X-Testing", "Testing-1")
+	bow.AddRequestHeader("X-Testing", "Testing-2")
+	err := bow.Open(ts.URL)
+	ut.AssertNil(err)
 	ut.AssertContains("Testing-2", bow.Body())
 }
 
